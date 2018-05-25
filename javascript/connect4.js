@@ -1,3 +1,5 @@
+// Thursday, 4 hours
+// Friday,
 (function() {
   const ROWS = 6;
   const COLS = 7;
@@ -11,18 +13,20 @@
   const cWidth = 490, cHeight = 420; // screen dimesions
   const rowHeight = cHeight / ROWS;
   const colWidth = cWidth / COLS;
-  var canvas = null;
-  var context = null;
-  var canvasRect = null; // dims where the canvas is on the page
-  var stop = true;
-  var gameOver = false;
-  var turn = RED;
-  var background;
-  var grid;
+  let canvas = null;
+  let context = null;
+  let canvasRect = null; // dims where the canvas is on the page
+  let stop = true;
+  let gameOver = false;
+  let turn = RED;
+  let background;
+  let grid;
 
   const discs = [];
+  let fakeDisc;
 
-  var Side = {'COMPUTER': 'COMPUTER', 'PLAYER': 'PLAYER', 'NONE': 'NONE'};
+  const Side = {'COMPUTER': 'COMPUTER', 'PLAYER': 'PLAYER', 'NONE': 'NONE'};
+  const Win = {'ROW': 'Row', 'COL': 'Column', 'DIAG': 'Diagonal'}
 
   class Disc {
     constructor(x, y, color) {
@@ -40,6 +44,18 @@
           rowHeight/2, 0, 2 * Math.PI, false);
       context.fillStyle = this.color;
       context.fill();
+    }
+
+    renderAbsolute() {
+      if (fakeDisc.color) {
+        context.beginPath();
+        context.arc(
+            this.x,
+            this.y,
+            rowHeight/2, 0, 2 * Math.PI, false);
+        context.fillStyle = this.color;
+        context.fill();
+      }
     }
   }
 
@@ -67,12 +83,33 @@
     }
 
     showGameOver() {
+      //////////////////////
+      // DON'T FLASH THIS //
+      //////////////////////
+      if (this.winLine) {
+        const line = this.winLine;
+        context.strokeStyle ='lightgreen';
+        context.lineWidth = 10;
+        const plus = rowHeight / 2;
+
+        context.beginPath();
+        context.moveTo(line.lx*colWidth+plus, line.ly*colWidth+plus);
+        context.lineTo(line.rx*colWidth+plus, line.ry*colWidth+plus);
+        context.stroke();
+      }
+      var elem = document.getElementById("you-won");
+      elem.innerHTML = (turn === RED) ? "Yellow Wins!!!" : "Red Wins!!!";
+      elem.style.display = "block";
+
+      ////////////////
+      // FLASH THIS //
+      ////////////////
       // don't show elements unless flashing === true
       if (!this.gameOverFlash.check()) return;
 
       var fontSize = 76;
       context.font = `${fontSize}px sans-serif`;
-      context.fillStyle = 'red';
+      context.fillStyle = 'white';
 
       var gW = context.measureText("GAME").width;
       var oW = context.measureText("OVER").width;
@@ -98,28 +135,16 @@
       context.fillText(str, (cWidth - context.measureText(str).width) / 2, cHeight / 2 + fontSize*2);
     }
 
+    saveWin(type, line) {
+      this.winType = type;
+      this.winLine = line;
+    }
+
     render() {
       // background sprite
       context.drawImage(this.sprite.image, 0, 0, this.sprite.width, this.sprite.height);
 
-      // // player1/player2 or player/computer
-      // this.showTitles();
-      //
-      // // easy, medium, hard
-      // this.showLevelIcons();
-      //
-      // // player2 or computer
-      // this.showComputerAndPlayerIcons();
-      //
-      // // mouse/kbd
-      // this.showInputIcons();
-      //
-      // this.showScore();
-
-      if (gameOver) {
-        this.showGameOver();
-      }
-      else if (stop) {
+      if (stop) {
         // this.showClickToStart();
       }
     }
@@ -170,6 +195,14 @@
       for (let i = 0; i < discs.length; i++) {
         discs[i].render();
       }
+      if (gameOver) {
+        background.showGameOver();
+      }
+      else {
+        if (fakeDisc.color) {
+          fakeDisc.renderAbsolute();
+        }
+      }
 
       requestAnimationFrame(step);
     }
@@ -191,9 +224,11 @@
     function createGameElements() {
       background = new Background();
       grid = new Grid();
+      fakeDisc = new Disc(0, 0, null);
     }
 
     function restartGame() {
+      document.getElementById("you-won").style.display = "none";
       gameOver = false;
       stop = true;
       discs.splice(0, discs.length);
@@ -205,25 +240,8 @@
       window.addEventListener('keydown', function(event) {
         if (gameOver) {
           restartGame();
-          // clearWonLost();
-          // background.whichSideScored(Side.NONE);
           return;
         }
-        // if computer has the keyboard and playing computer, leave
-        // if (!pKbd && computer) return;
-        //
-        // var paddle = pKbd ? pPaddle : cPaddle;
-        // switch(event.keyCode) {
-        //   case 32: //spacebar
-        //     stop = false; // start play
-        //     break;
-        //   case 38: //paddle up
-        //     paddle.move(-10);
-        //     break;
-        //   case 40: //paddle down
-        //     paddle.move(10);
-        //     break;
-        // }
       });
     }
 
@@ -234,6 +252,8 @@
           restartGame();
           return;
         }
+        if (fakeDisc.color) fakeDisc.color = null;
+
         canvasRect = canvas.getBoundingClientRect();
         const mouseX = event.clientX - canvasRect.left;
 
@@ -258,39 +278,102 @@
         return discs.filter(target => {return target.x === disc.x});
       }
       function checkForFour(arr, x) {
+        let lx = 0, ly = 0, rx = 0, ry = 0;
+
         let last = 0, lastColor = '', count = 0;
         for (let i = 0; i < arr.length; i++) {
           const xy = x ? arr[i].x : arr[i].y;
           if (xy !== last+1 || arr[i].color != lastColor) {
             count = 1;
+            lx = arr[i].x;
+            ly = arr[i].y;
           }
           else {
             count += 1;
+            rx = arr[i].x;
+            ry = arr[i].y;
             if (count === 4) {
               gameOver = true;
+              break;
             }
           }
           last = x ? arr[i].x : arr[i].y;
           lastColor = arr[i].color;
         }
+
+        return {'lx':lx, 'ly':ly, 'rx':rx, 'ry':ry};
       }
 
       function checkRowForWin(disc) {
         let row = getRow(disc);
         row.sort((a, b) => a.x - b.x);
-        checkForFour(row, true);
+        return checkForFour(row, true);
       }
 
       function checkColForWin(disc) {
         let col = getCol(disc);
         col.sort((a, b) => a.y - b.y);
-        checkForFour(col, false);
+        return checkForFour(col, false);
+      }
+
+      function equal(d, disc, x, y) {
+        const eq = d.color === disc.color && d.x === x && d.y === y;
+
+        return eq;
+      }
+
+      function checkDiagForWin(disc) {
+        // -slope: to left: -x/-y; to right: +x/+y
+        let i = disc.x, j = disc.y;
+        // get to leftmost disc
+        for (
+            var lx = i, ly = j;
+            discs.find(d =>{return equal(d, disc, i, j)});
+            lx = i, ly = j, i--, j--);
+        // get to rightmost disc
+        for (
+            var rx = lx, x = lx, ry = ly, y = ly;
+            discs.find(d => {return equal(d, disc, x, y)});
+            rx = x, ry = y, x++, y++);
+
+        if (rx - lx + 1 === 4) {
+          gameOver = true;
+          return {'lx':lx, 'ly':ly, 'rx':rx, 'ry':ry};
+        }
+
+        // +slope: to left: -x/+y; to right: +x/-y
+        i = disc.x, j = disc.y;
+        // get to leftmost disc
+        for (
+            lx = i, ly = j;
+            discs.find(d => {return equal(d, disc, i, j)});
+            lx = i, ly = j, i--, j++);
+        // get to rightmost disc
+        for (
+            rx = lx, x = lx, ry = ly, y = ly;
+            discs.find(d => {return equal(d, disc, x, y)});
+            rx = x, ry = y, x++, y--);
+
+        if (rx - lx + 1 === 4) {
+          gameOver = true;
+          return {'lx':lx, 'ly':ly, 'rx':rx, 'ry':ry};
+        }
+
+        return null;
       }
 
       function checkForWin(disc) {
-        checkRowForWin(disc);
         if (!gameOver) {
-          checkColForWin(disc);
+          const line = checkRowForWin(disc);
+          if (gameOver) background.saveWin(Win.ROW, line);
+        }
+        if (!gameOver) {
+          const line = checkColForWin(disc);
+          if (gameOver) background.saveWin(Win.COL, line);
+        }
+        if (!gameOver) {
+          const line = checkDiagForWin(disc);
+          if (gameOver) background.saveWin(Win.DIAG, line);
         }
       }
 
@@ -311,13 +394,19 @@
 
     function mouseMoveListener() {
       window.addEventListener('mousemove', function(event) {
-        // if computer has the mouse and playing computer, leave
-        // if (pKbd && computer) return;
+        if (gameOver) return;
 
-        // var paddle = pKbd ? cPaddle : pPaddle;
-        // var dir = event.screenY - this.lastY;
-        // paddle.move(dir > 0 ? 10 : dir === 0 ? 0 : -10);
-        // this.lastY = event.screenY;
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        if (x > cWidth || y > cHeight || x < 0 || y < 0) return;
+
+        fakeDisc.x = x;
+        fakeDisc.y = y;
+
+        if (!fakeDisc.color) {
+          fakeDisc.color = turn === RED ? 'red' : 'yellow';
+        }
       });
     }
 
