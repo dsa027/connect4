@@ -1,6 +1,6 @@
 ---
-title: Pong
-summary: A Web-based, Pong game written in JavaScript using HTML5 Canvas
+title: Connect4
+summary: A Web-based Connect4 game written in JavaScript using HTML5 Canvas
 tech: JavaScript, HTML5 Canvas, HTML/CSS, Heroku, GitHub
 ---
 [1]: https://pong-dsa027.herokuapp.com/
@@ -8,15 +8,11 @@ tech: JavaScript, HTML5 Canvas, HTML/CSS, Heroku, GitHub
 
 # Summary
 
-  A version of Pong written in JavaScript using HTML5 Canvas.
+  A version of Connect4 written in JavaScript using HTML5 Canvas.
 
 # Explanation
 
-  This is Pong, taken from the original Pong game (1972 Atari) with these features:
-  - Level: Easy, Medium, and Hard. Hard should be labelled "Insane" but I wanted to keep things simple. The paddle gets smaller and the ball gains speed as the level goes up. On every level, the ball gains speed every time it hits Player(1)'s paddle after the first five. Icons in upper-center.
-  - Player vs Computer / Player 1 vs Player 2 (icons in upper-right)
-  - Mouse or Keyboard: a player can be either. Hard level on the keyboard is challenging. Or it's impossible, I actually don't know.
-  - Score: the current score, leader in green.
+  This is Connect4. Drop a red disc. Have another player drop a yellow. Keep going until one of you has 4 in a row, column, or diagonal.
 
 # Problem
 
@@ -32,7 +28,7 @@ tech: JavaScript, HTML5 Canvas, HTML/CSS, Heroku, GitHub
 
 # Results
 
-  I have some experience in game creation using LibGDX, so animating Pong using a 60 fps game loop along with collision detection was familiar. Still, I hadn't done so in JavaScript. I feel like it's fairly lean (or at least lean enough), although I'm sure it can be optimized further.
+  I used my Pong game to create this game.
 
 # Conclusion
   Animation is fascinating.
